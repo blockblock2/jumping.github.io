@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Scratch Arcade</title>
+<title>Jumping Over Stuff</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -138,8 +138,7 @@
 <body>
 
 <header>
-  <h1>My Scratch <span class="spark">Arcade</span></h1>
-  <p>A collection of games built in Scratch. Click the green flag on any game to play!</p>
+  <h1>Jumping Over Stuff</h1>
 </header>
 
 <main class="arcade" id="arcade"></main>
@@ -150,36 +149,68 @@
 
 <script>
   /* ============================================================
-     ADD YOUR GAMES HERE
-     Each game needs a title and its Scratch project ID.
-     The ID is the number in the project URL:
-     https://scratch.mit.edu/projects/60917032/  ->  id: "60917032"
+     This site loads every project from your Scratch studio
+     automatically. To add a game to the website, just add it
+     to the studio on Scratch — no code changes needed.
      ============================================================ */
-  const games = [
-    { title: "Paper Minecraft",   id: "10128407" },
-    { title: "Geometry Dash",     id: "105500895" },
-    { title: "Appel",             id: "60917032" },
-    { title: "Scratchnapped",     id: "1206014" },
-  ];
+  const STUDIO_ID = "51730103";
 
   const arcade = document.getElementById("arcade");
 
-  games.forEach(game => {
+  function addCard(title, id) {
     const card = document.createElement("article");
     card.className = "game";
-    card.innerHTML = `
-      <h2 class="game-title">${game.title}</h2>
-      <div class="game-frame">
-        <iframe
-          src="https://scratch.mit.edu/projects/${game.id}/embed"
-          loading="lazy"
-          allowtransparency="true"
-          allowfullscreen
-          title="${game.title} — Scratch game">
-        </iframe>
-      </div>`;
+
+    const heading = document.createElement("h2");
+    heading.className = "game-title";
+    heading.textContent = title;
+
+    const frame = document.createElement("div");
+    frame.className = "game-frame";
+
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://scratch.mit.edu/projects/${id}/embed`;
+    iframe.loading = "lazy";
+    iframe.allowFullscreen = true;
+    iframe.title = `${title} — Scratch game`;
+
+    frame.appendChild(iframe);
+    card.appendChild(heading);
+    card.appendChild(frame);
     arcade.appendChild(card);
-  });
+  }
+
+  async function loadStudio() {
+    let offset = 0;
+    let found = 0;
+    try {
+      // Scratch's own API blocks browser requests from other websites,
+      // so this goes through TurboWarp's trampoline proxy, a community
+      // service built for exactly this purpose.
+      while (true) {
+        const res = await fetch(
+          `https://trampoline.turbowarp.org/proxy/studios/${STUDIO_ID}/projects?offset=${offset}`
+        );
+        if (!res.ok) throw new Error(`API responded ${res.status}`);
+        const projects = await res.json();
+        if (!Array.isArray(projects) || projects.length === 0) break;
+
+        projects.forEach(p => addCard(p.title, p.id));
+        found += projects.length;
+        offset += projects.length;
+      }
+      if (found === 0) {
+        arcade.innerHTML =
+          "<p style='grid-column: 1 / -1; text-align: center;'>No games in the studio yet. Add some projects to the studio on Scratch and refresh!</p>";
+      }
+    } catch (err) {
+      arcade.innerHTML =
+        "<p style='grid-column: 1 / -1; text-align: center;'>Couldn't load the games right now. Check that the studio exists and try refreshing.</p>";
+      console.error("Failed to load studio projects:", err);
+    }
+  }
+
+  loadStudio();
 </script>
 
 </body>
