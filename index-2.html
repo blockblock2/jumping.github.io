@@ -73,18 +73,22 @@
     position: relative;
   }
 
-  /* The puzzle tab on top — the signature Scratch-block notch */
-  .game::before {
-    content: "";
+  /* The puzzle tab on top — now shows who made the game */
+  .game-tab {
     position: absolute;
-    top: -14px;
+    top: -26px;
     left: 34px;
-    width: 56px;
-    height: 14px;
+    padding: 3px 14px 2px;
     background: var(--tab, var(--orange));
     border: 3px solid var(--ink);
     border-bottom: none;
     border-radius: 10px 10px 0 0;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+    white-space: nowrap;
   }
 
   /* Rotate accent colors across cards like Scratch block categories */
@@ -93,16 +97,47 @@
   .game:nth-child(3n+3) { --tab: var(--purple); }
 
   .game-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     font-family: 'Fredoka', sans-serif;
     font-weight: 600;
     font-size: 1.25rem;
-    padding: 14px 18px 12px;
+    padding: 12px 14px 10px 18px;
     border-bottom: 3px solid var(--ink);
     background: var(--tab, var(--orange));
     color: #fff;
     border-radius: 11px 11px 0 0;
     text-shadow: 0 1px 0 rgba(0,0,0,0.15);
   }
+
+  .fullscreen-btn {
+    flex-shrink: 0;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+    background: rgba(0,0,0,0.18);
+    border: 2px solid #fff;
+    border-radius: 8px;
+    padding: 4px 12px;
+    cursor: pointer;
+  }
+
+  .fullscreen-btn:hover { background: rgba(0,0,0,0.32); }
+
+  .fullscreen-btn:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* When a game goes fullscreen, fill the whole screen */
+  .game-frame:fullscreen {
+    border-radius: 0;
+    background: #000;
+  }
+  .game-frame:fullscreen iframe { width: 100%; height: 100%; }
 
   .game-frame {
     aspect-ratio: 485 / 402;
@@ -157,13 +192,24 @@
 
   const arcade = document.getElementById("arcade");
 
-  function addCard(title, id) {
+  function addCard(title, id, username) {
     const card = document.createElement("article");
     card.className = "game";
 
+    const tab = document.createElement("span");
+    tab.className = "game-tab";
+    tab.textContent = `by ${username}`;
+
     const heading = document.createElement("h2");
     heading.className = "game-title";
-    heading.textContent = title;
+
+    const titleText = document.createElement("span");
+    titleText.textContent = title;
+
+    const fsBtn = document.createElement("button");
+    fsBtn.className = "fullscreen-btn";
+    fsBtn.type = "button";
+    fsBtn.textContent = "⛶ Full screen";
 
     const frame = document.createElement("div");
     frame.className = "game-frame";
@@ -174,7 +220,18 @@
     iframe.allowFullscreen = true;
     iframe.title = `${title} — Scratch game`;
 
+    fsBtn.addEventListener("click", () => {
+      if (frame.requestFullscreen) {
+        frame.requestFullscreen();
+      } else if (frame.webkitRequestFullscreen) {
+        frame.webkitRequestFullscreen(); // Safari
+      }
+    });
+
+    heading.appendChild(titleText);
+    heading.appendChild(fsBtn);
     frame.appendChild(iframe);
+    card.appendChild(tab);
     card.appendChild(heading);
     card.appendChild(frame);
     arcade.appendChild(card);
@@ -195,7 +252,7 @@
         const projects = await res.json();
         if (!Array.isArray(projects) || projects.length === 0) break;
 
-        projects.forEach(p => addCard(p.title, p.id));
+        projects.forEach(p => addCard(p.title, p.id, p.username));
         found += projects.length;
         offset += projects.length;
       }
