@@ -339,6 +339,13 @@
     color: var(--muted);
   }
 
+  /* Highlight the game chosen by "Surprise me!" */
+  .game.surprise-pick {
+    outline: 5px solid var(--orange);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px rgba(255, 140, 26, 0.25), var(--shadow);
+  }
+
   /* ---------- Footer ---------- */
   footer { text-align: center; padding: 0 20px 60px; font-size: 0.9rem; color: var(--muted); }
   footer a { color: var(--purple); font-weight: 700; }
@@ -712,12 +719,16 @@
     render();
     const cards = arcade.querySelectorAll(".game");
     if (cards.length === 0) return;
+    cards.forEach(function (c) { c.classList.remove("surprise-pick"); });
     const pick = cards[Math.floor(Math.random() * cards.length)];
+    pick.classList.add("surprise-pick");
     pick.scrollIntoView({ behavior: "smooth", block: "center" });
     pick.animate(
-      [{ transform: "scale(1)" }, { transform: "scale(1.04)" }, { transform: "scale(1)" }],
+      [{ transform: "scale(1)" }, { transform: "scale(1.06)" }, { transform: "scale(1)" }],
       { duration: 600 }
     );
+    // Remove the glow after a few seconds so it's ready for next time
+    setTimeout(function () { pick.classList.remove("surprise-pick"); }, 4000);
   });
 
   // Keyboard shortcut: press "/" to jump to search
