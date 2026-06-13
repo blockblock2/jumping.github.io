@@ -172,6 +172,73 @@
 
   footer a { color: var(--purple); font-weight: 700; }
 
+  /* ---------- Corner note ---------- */
+  .side-note {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    max-width: 210px;
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 10px 30px 10px 14px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--ink);
+    z-index: 50;
+  }
+
+  .side-note strong { color: var(--purple); }
+
+  .note-toggle {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .note-toggle:hover { background: #fff; }
+
+  .note-toggle:focus-visible {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+  }
+
+  /* Collapsed: hide the text, shrink to just the button */
+  .side-note.minimized {
+    max-width: none;
+    width: auto;
+    padding: 6px;
+  }
+
+  .side-note.minimized .note-body { display: none; }
+
+  .side-note.minimized .note-toggle {
+    position: static;
+  }
+
+  @media (max-width: 640px) {
+    .side-note {
+      position: static;
+      max-width: none;
+      margin: 0 24px 32px;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .game { transition: transform 0.15s ease; }
     .game:hover { transform: translateY(-4px); }
@@ -185,6 +252,11 @@
 </header>
 
 <main class="arcade" id="arcade"></main>
+
+<aside class="side-note" id="sideNote">
+  <button class="note-toggle" id="noteToggle" type="button" aria-label="Minimize note" title="Minimize">–</button>
+  <span class="note-body"><strong>Just added a game?</strong> New projects can take up to <strong>6 hours</strong> to appear here.</span>
+</aside>
 
 <footer>
   Made with <a href="https://scratch.mit.edu" target="_blank" rel="noopener">Scratch</a> · Hosted on GitHub Pages
@@ -280,6 +352,22 @@
   }
 
   loadStudio();
+
+  // Minimize / expand the corner note
+  const sideNote = document.getElementById("sideNote");
+  const noteToggle = document.getElementById("noteToggle");
+  noteToggle.addEventListener("click", () => {
+    const minimized = sideNote.classList.toggle("minimized");
+    if (minimized) {
+      noteToggle.textContent = "?";
+      noteToggle.setAttribute("aria-label", "Show note");
+      noteToggle.title = "Show note";
+    } else {
+      noteToggle.textContent = "–";
+      noteToggle.setAttribute("aria-label", "Minimize note");
+      noteToggle.title = "Minimize";
+    }
+  });
 </script>
 
 </body>
