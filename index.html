@@ -417,6 +417,7 @@
     text-align: left;
   }
   .vote-option:hover { background: var(--blue); color: #fff; }
+  .vote-option.just-voted { background: var(--purple); color: #fff; }
   .vote-option .vc {
     font-size: 0.8rem;
     opacity: 0.8;
@@ -620,26 +621,44 @@
     try {
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
-      // Live updates: whenever votes change anywhere, refresh.
+      // Live updates: when votes change, refresh the numbers in place.
+      // Only rebuild the whole grid if a game actually crossed the
+      // threshold and changed category (so we don't interrupt anyone
+      // mid-game every time someone votes).
       db.ref("votes").on("value", function (snap) {
+        const before = allGames.map(classifyGame).join("|");
         voteData = snap.val() || {};
-        if (allGames.length) { render(); buildChips(); }
+        const after = allGames.map(classifyGame).join("|");
+        if (allGames.length && before !== after) {
+          render();
+          buildChips();
+        } else {
+          updateVoteCounts();
+        }
       });
     } catch (e) {
       console.error("Voting setup failed:", e);
     }
   }
 
-  // Cast one vote. One vote per browser per game+category.
+  // Cast one vote (atomic, reliable). Each click adds one.
   function castVote(gameId, slug) {
-    if (!db) return "off";
-    const guard = "voted:" + gameId + ":" + slug;
-    try { if (localStorage.getItem(guard) === "1") return "already"; } catch (e) {}
-    db.ref("votes/" + gameId + "/" + slug).transaction(function (cur) {
-      return (cur || 0) + 1;
+    if (!db) return false;
+    db.ref("votes/" + gameId + "/" + slug)
+      .set(firebase.database.ServerValue.increment(1));
+    return true;
+  }
+
+  // Refresh the vote numbers shown on cards without rebuilding them
+  // (rebuilding would interrupt a game someone is playing).
+  function updateVoteCounts() {
+    document.querySelectorAll(".vote-option").forEach(function (opt) {
+      const id = opt.getAttribute("data-game");
+      const slug = opt.getAttribute("data-slug");
+      const n = (voteData[id] && voteData[id][slug]) || 0;
+      const vc = opt.querySelector(".vc");
+      if (vc) vc.textContent = n + "/" + VOTE_THRESHOLD;
     });
-    try { localStorage.setItem(guard, "1"); } catch (e) {}
-    return "ok";
   }
 
   const CLASSIC_SHOWS = [
@@ -875,16 +894,22 @@
         const opt = document.createElement("button");
         opt.className = "vote-option";
         opt.type = "button";
+        opt.setAttribute("data-game", g.id);
+        opt.setAttribute("data-slug", c.slug);
         const n = counts[c.slug] || 0;
         opt.innerHTML = c.name + ' <span class="vc">' + n + "/" + VOTE_THRESHOLD + "</span>";
         opt.addEventListener("click", function () {
-          const res = castVote(g.id, c.slug);
-          if (res === "already") {
-            opt.querySelector(".vc").textContent = "voted ✓";
-          }
-          voteMenu.classList.add("hidden");
-          // The live listener re-renders when the vote lands, moving the
-          // game if it crosses the threshold.
+          if (!castVote(g.id, c.slug)) return;
+          // Update the number right away so the vote is clearly seen.
+          voteData[g.id] = voteData[g.id] || {};
+          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + 1;
+          const vc = opt.querySelector(".vc");
+          if (vc) vc.textContent = voteData[g.id][c.slug] + "/" + VOTE_THRESHOLD;
+          opt.classList.add("just-voted");
+          voteToggle.textContent = "✓ Vote counted!";
+          setTimeout(function () { voteToggle.textContent = "🗳️ Add a vote"; }, 1500);
+          // The live listener confirms from the database and moves the
+          // game if it just crossed the threshold.
         });
         voteMenu.appendChild(opt);
       });
