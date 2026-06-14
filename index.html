@@ -496,6 +496,7 @@
 <body>
 
 <div class="top-bar">
+  <button class="icon-btn" id="adminBtn" type="button">🔑 Admin</button>
   <button class="icon-btn" id="themeToggle" type="button">🌙 Dark</button>
 </div>
 
@@ -597,6 +598,12 @@
   const VOTING_ENABLED =
     FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL !== "PASTE_HERE";
 
+  // ---- Admin mode: an admin's single vote counts as 5 ----
+  // CHANGE THIS to your own secret password:
+  const ADMIN_PASSWORD = "STEMisFUN";
+  const ADMIN_VOTE_WEIGHT = 5;
+  let isAdmin = false;
+
   let voteData = {}; // { gameId: { slug: count } }
   let db = null;
 
@@ -641,12 +648,13 @@
     }
   }
 
-  // Cast one vote (atomic, reliable). Each click adds one.
+  // Cast a vote (atomic, reliable). Admins add 5, everyone else adds 1.
   function castVote(gameId, slug) {
-    if (!db) return false;
+    if (!db) return 0;
+    const amount = isAdmin ? ADMIN_VOTE_WEIGHT : 1;
     db.ref("votes/" + gameId + "/" + slug)
-      .set(firebase.database.ServerValue.increment(1));
-    return true;
+      .set(firebase.database.ServerValue.increment(amount));
+    return amount;
   }
 
   // Refresh the vote numbers shown on cards without rebuilding them
@@ -884,7 +892,7 @@
       const voteToggle = document.createElement("button");
       voteToggle.className = "vote-toggle";
       voteToggle.type = "button";
-      voteToggle.textContent = "🗳️ Add a vote";
+      voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
 
       const voteMenu = document.createElement("div");
       voteMenu.className = "vote-menu hidden";
@@ -899,15 +907,18 @@
         const n = counts[c.slug] || 0;
         opt.innerHTML = c.name + ' <span class="vc">' + n + "/" + VOTE_THRESHOLD + "</span>";
         opt.addEventListener("click", function () {
-          if (!castVote(g.id, c.slug)) return;
+          const added = castVote(g.id, c.slug);
+          if (!added) return;
           // Update the number right away so the vote is clearly seen.
           voteData[g.id] = voteData[g.id] || {};
-          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + 1;
+          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + added;
           const vc = opt.querySelector(".vc");
           if (vc) vc.textContent = voteData[g.id][c.slug] + "/" + VOTE_THRESHOLD;
           opt.classList.add("just-voted");
-          voteToggle.textContent = "✓ Vote counted!";
-          setTimeout(function () { voteToggle.textContent = "🗳️ Add a vote"; }, 1500);
+          voteToggle.textContent = added > 1 ? "✓ +" + added + " votes!" : "✓ Vote counted!";
+          setTimeout(function () {
+            voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
+          }, 1500);
           // The live listener confirms from the database and moves the
           // game if it just crossed the threshold.
         });
@@ -1101,6 +1112,27 @@
     noteToggle.textContent = min ? "?" : "–";
     noteToggle.setAttribute("aria-label", min ? "Show note" : "Minimize note");
     noteToggle.title = min ? "Show note" : "Minimize";
+  });
+
+  // Admin mode: password unlocks votes worth 5
+  const adminBtn = document.getElementById("adminBtn");
+  adminBtn.addEventListener("click", function () {
+    if (isAdmin) {
+      isAdmin = false;
+      adminBtn.textContent = "🔑 Admin";
+      if (allGames.length) render();
+      return;
+    }
+    const pw = window.prompt("Enter the admin password:");
+    if (pw === null) return; // cancelled
+    if (pw === ADMIN_PASSWORD) {
+      isAdmin = true;
+      adminBtn.textContent = "🔑 Admin ✓";
+      if (allGames.length) render();
+      window.alert("Admin mode is on — your votes now count as 5! Click 🔑 Admin again to turn it off.");
+    } else {
+      window.alert("Wrong password.");
+    }
   });
 
   // Back to top
