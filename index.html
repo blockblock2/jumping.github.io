@@ -418,6 +418,12 @@
   }
   .vote-option:hover { background: var(--blue); color: #fff; }
   .vote-option.just-voted { background: var(--purple); color: #fff; }
+  .vote-option.current-cat {
+    opacity: 0.55;
+    cursor: default;
+    background: var(--paper);
+  }
+  .vote-option.current-cat:hover { background: var(--paper); color: var(--ink); }
   .vote-option .vc {
     font-size: 0.8rem;
     opacity: 0.8;
@@ -672,6 +678,7 @@
   // (rebuilding would interrupt a game someone is playing).
   function updateVoteCounts() {
     document.querySelectorAll(".vote-option").forEach(function (opt) {
+      if (opt.classList.contains("current-cat")) return; // keep "already here"
       const id = opt.getAttribute("data-game");
       const slug = opt.getAttribute("data-slug");
       const n = (voteData[id] && voteData[id][slug]) || 0;
@@ -935,6 +942,7 @@
       voteMenu.className = "vote-menu hidden";
 
       const counts = voteData[g.id] || {};
+      const currentCat = classifyGame(g); // the category it's already in
       VOTE_CATEGORIES.forEach(function (c) {
         const opt = document.createElement("button");
         opt.className = "vote-option";
@@ -942,8 +950,16 @@
         opt.setAttribute("data-game", g.id);
         opt.setAttribute("data-slug", c.slug);
         const n = counts[c.slug] || 0;
-        opt.innerHTML = c.name + ' <span class="vc">' + displayCount(n) + "</span>";
+        const isCurrent = (c.name === currentCat);
+        if (isCurrent) {
+          opt.classList.add("current-cat");
+          opt.disabled = true;
+          opt.innerHTML = c.name + ' <span class="vc">✓ already here</span>';
+        } else {
+          opt.innerHTML = c.name + ' <span class="vc">' + displayCount(n) + "</span>";
+        }
         opt.addEventListener("click", function () {
+          if (opt.disabled) return;
           const before = classifyGame(g);
           const res = castVote(g.id, c.slug);
           if (!res) return;
