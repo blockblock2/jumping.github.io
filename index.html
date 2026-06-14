@@ -15,7 +15,7 @@
 <meta name="twitter:title" content="Jumping Over Stuff">
 <meta name="twitter:description" content="A collection of fun games built in Scratch. Click any game to play right in your browser!">
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='6' y='6' width='88' height='88' rx='20' fill='%23FF8C1A' stroke='%231C2540' stroke-width='6'/><rect x='18' y='75' width='64' height='6' rx='3' fill='%231C2540'/><ellipse cx='40' cy='66' rx='15' ry='10' fill='%23FFD23F' stroke='%231C2540' stroke-width='4'/><circle cx='35' cy='64' r='2' fill='%231C2540'/><circle cx='45' cy='64' r='2' fill='%231C2540'/><path d='M33 72 L31 76' stroke='%231C2540' stroke-width='4' stroke-linecap='round'/><path d='M47 72 L49 76' stroke='%231C2540' stroke-width='4' stroke-linecap='round'/><rect x='52' y='30' width='14' height='21' rx='6' fill='%234C97FF' stroke='%231C2540' stroke-width='4'/><circle cx='59' cy='20' r='13' fill='%234C97FF' stroke='%231C2540' stroke-width='4'/><circle cx='54' cy='18' r='2' fill='%231C2540'/><circle cx='64' cy='18' r='2' fill='%231C2540'/><path d='M53 24 Q59 29 65 24' fill='none' stroke='%231C2540' stroke-width='2.5' stroke-linecap='round'/><path d='M52 35 L42 25' stroke='%231C2540' stroke-width='4.5' stroke-linecap='round'/><path d='M66 35 L76 25' stroke='%231C2540' stroke-width='4.5' stroke-linecap='round'/><path d='M55 51 L49 60' stroke='%231C2540' stroke-width='4.5' stroke-linecap='round'/><path d='M63 51 L71 59' stroke='%231C2540' stroke-width='4.5' stroke-linecap='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -377,6 +377,104 @@
     color: var(--muted);
   }
 
+  /* ---------- Follow + notifications ---------- */
+  .notify-banner {
+    max-width: 1180px;
+    margin: 12px auto 0;
+    padding: 12px 18px;
+    background: var(--blue);
+    color: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .notify-banner .nb-close {
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.2);
+    border: 2px solid #fff;
+    color: #fff;
+    border-radius: 8px;
+    padding: 3px 10px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .follow-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .follow-box {
+    background: var(--card);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    width: min(440px, 100%);
+    max-height: 80vh;
+    overflow: auto;
+    padding: 20px;
+  }
+  .follow-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .follow-head h2 { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; }
+  .follow-close {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .follow-sub { font-size: 0.9rem; color: var(--muted); margin: 8px 0 14px; line-height: 1.4; }
+  .follow-all {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--paper);
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .follow-list { display: grid; gap: 6px; }
+  .follow-list label {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .follow-list input, .follow-all input { width: 17px; height: 17px; }
+  .follow-save {
+    margin-top: 14px;
+    width: 100%;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    background: var(--purple);
+    border: 3px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+  }
+
   /* ---------- Voting ---------- */
   .vote-bar { padding: 10px 14px 14px; }
   .vote-toggle {
@@ -502,8 +600,26 @@
 <body>
 
 <div class="top-bar">
+  <button class="icon-btn" id="followBtn" type="button">🔔 Follow</button>
   <button class="icon-btn" id="adminBtn" type="button">🔑 Admin</button>
   <button class="icon-btn" id="themeToggle" type="button">🌙 Dark</button>
+</div>
+
+<div class="notify-banner" id="notifyBanner" style="display:none;"></div>
+
+<div class="follow-modal" id="followModal" style="display:none;">
+  <div class="follow-box">
+    <div class="follow-head">
+      <h2>🔔 Follow creators</h2>
+      <button class="follow-close" id="followClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <p class="follow-sub">Pick whose games you want to be told about. Next time you open the arcade, you'll see a note if they've added something new.</p>
+    <label class="follow-all">
+      <input type="checkbox" id="followEveryone"> <strong>Everyone</strong> (any new game)
+    </label>
+    <div class="follow-list" id="followList"></div>
+    <button class="follow-save" id="followSave" type="button">Save</button>
+  </div>
 </div>
 
 <header>
@@ -627,6 +743,94 @@
       if (v[slug] > bestN) { best = slug; bestN = v[slug]; }
     }
     return best ? slugToName(best) : null;
+  }
+
+  /* ============================================================
+     FOLLOW CREATORS + NOTIFICATIONS
+     Each visitor can follow creators. When they reopen the arcade,
+     a banner tells them about new games from those creators. Follows
+     are saved on the visitor's own device.
+     ============================================================ */
+  function loadFollows() {
+    try {
+      const raw = localStorage.getItem("follows");
+      return raw ? JSON.parse(raw) : { everyone: false, users: [] };
+    } catch (e) { return { everyone: false, users: [] }; }
+  }
+  function saveFollows(f) {
+    try { localStorage.setItem("follows", JSON.stringify(f)); } catch (e) {}
+  }
+  function isFollowed(username) {
+    const f = loadFollows();
+    return f.everyone || f.users.indexOf(username) !== -1;
+  }
+
+  // Build the checkbox list of creators in the follow popup.
+  function populateFollowList() {
+    const list = document.getElementById("followList");
+    if (!list) return;
+    const f = loadFollows();
+    document.getElementById("followEveryone").checked = !!f.everyone;
+    const creators = [];
+    allGames.forEach(function (g) {
+      if (creators.indexOf(g.username) === -1) creators.push(g.username);
+    });
+    creators.sort(function (a, b) { return a.localeCompare(b); });
+    list.innerHTML = "";
+    creators.forEach(function (name) {
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = name;
+      cb.checked = f.users.indexOf(name) !== -1;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(" " + name));
+      list.appendChild(label);
+    });
+  }
+
+  // Compare the games we see now with the ones seen last visit.
+  function checkForNewGames() {
+    let seen = [];
+    try {
+      const raw = localStorage.getItem("seenGames");
+      if (raw) seen = JSON.parse(raw);
+    } catch (e) {}
+    const seenSet = {};
+    seen.forEach(function (id) { seenSet[id] = true; });
+
+    const currentIds = allGames.map(function (g) { return String(g.id); });
+
+    // First ever visit: just remember, don't notify.
+    if (seen.length > 0) {
+      const fresh = allGames.filter(function (g) {
+        return !seenSet[String(g.id)] && isFollowed(g.username);
+      });
+      if (fresh.length > 0) showNotifyBanner(fresh);
+    }
+    try { localStorage.setItem("seenGames", JSON.stringify(currentIds)); } catch (e) {}
+  }
+
+  function showNotifyBanner(games) {
+    const banner = document.getElementById("notifyBanner");
+    if (!banner) return;
+    let msg;
+    if (games.length === 1) {
+      msg = "🔔 New game from " + games[0].username + ": “" + games[0].title + "”!";
+    } else {
+      msg = "🔔 " + games.length + " new games from creators you follow!";
+    }
+    banner.innerHTML = "";
+    const span = document.createElement("span");
+    span.textContent = msg;
+    const close = document.createElement("button");
+    close.className = "nb-close";
+    close.type = "button";
+    close.textContent = "Got it";
+    close.addEventListener("click", function () { banner.style.display = "none"; });
+    banner.appendChild(span);
+    banner.appendChild(close);
+    banner.style.display = "flex";
   }
 
   function initVoting() {
@@ -795,6 +999,20 @@
       badge.textContent = (byVote ? "🗳️ " : "🤖 ") + cat;
       badge.title = byVote ? "Moved here by votes" : "Sorted automatically from the title";
     }
+    // Refresh which vote option is "already here" now.
+    card.querySelectorAll(".vote-option").forEach(function (opt) {
+      const slug = opt.getAttribute("data-slug");
+      const vc = opt.querySelector(".vc");
+      if (slugToName(slug) === cat) {
+        opt.classList.add("current-cat");
+        opt.disabled = true;
+        if (vc) vc.textContent = "✓ already here";
+      } else {
+        opt.classList.remove("current-cat");
+        opt.disabled = false;
+        if (vc) vc.textContent = displayCount((voteData[g.id] && voteData[g.id][slug]) || 0);
+      }
+    });
     // If a category filter is active and this card no longer belongs,
     // fade it out and remove it. Otherwise just give it a little flash.
     if (activeCategory !== "All" && cat !== activeCategory) {
@@ -960,36 +1178,21 @@
         }
         opt.addEventListener("click", function () {
           if (opt.disabled) return;
-          const before = classifyGame(g);
           const res = castVote(g.id, c.slug);
           if (!res) return;
-          // Update the count locally right away.
-          voteData[g.id] = voteData[g.id] || {};
-          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + res.amount;
+          // The database listener updates the count and moves the card.
+          // We only show quick feedback here so there's no double-count.
+          opt.classList.add("just-voted");
           voteToggle.textContent = res.amount > 1 ? "✓ +" + res.amount + " votes!" : "✓ Vote counted!";
-
-          // If the save is rejected (usually database rules), say so.
           if (res.promise && res.promise.catch) {
             res.promise.catch(function (e) {
               voteToggle.textContent = "⚠️ Couldn't save — check database rules";
               console.error("Vote save failed:", e);
             });
           }
-
-          const after = classifyGame(g);
-          if (after !== before) {
-            // Crossed the threshold — move just this one card smoothly
-            // instead of rebuilding the whole grid (which flashes white).
-            moveCardSmoothly(card, g);
-            buildChips();
-          } else {
-            const vc = opt.querySelector(".vc");
-            if (vc) vc.textContent = displayCount(voteData[g.id][c.slug]);
-            opt.classList.add("just-voted");
-            setTimeout(function () {
-              voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
-            }, 1500);
-          }
+          setTimeout(function () {
+            voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
+          }, 1500);
         });
         voteMenu.appendChild(opt);
       });
@@ -1119,6 +1322,8 @@
       buildChips();
       setSpotlight();
       render();
+      checkForNewGames();   // notify about new games from followed creators
+      populateFollowList();
     } catch (err) {
       gameCount.textContent = "";
       arcade.innerHTML = "<p class='no-results'>Couldn't load the games right now — the service we use to read the studio may be busy. Please try refreshing in a little while.</p>";
@@ -1181,6 +1386,42 @@
     noteToggle.textContent = min ? "?" : "–";
     noteToggle.setAttribute("aria-label", min ? "Show note" : "Minimize note");
     noteToggle.title = min ? "Show note" : "Minimize";
+  });
+
+  // Follow creators modal
+  const followModal = document.getElementById("followModal");
+  document.getElementById("followBtn").addEventListener("click", function () {
+    populateFollowList();
+    followModal.style.display = "flex";
+  });
+  document.getElementById("followClose").addEventListener("click", function () {
+    followModal.style.display = "none";
+  });
+  followModal.addEventListener("click", function (e) {
+    if (e.target === followModal) followModal.style.display = "none";
+  });
+  document.getElementById("followSave").addEventListener("click", function () {
+    const everyone = document.getElementById("followEveryone").checked;
+    const users = [];
+    document.querySelectorAll("#followList input:checked").forEach(function (cb) {
+      users.push(cb.value);
+    });
+    saveFollows({ everyone: everyone, users: users });
+    followModal.style.display = "none";
+    const banner = document.getElementById("notifyBanner");
+    banner.innerHTML = "";
+    const span = document.createElement("span");
+    span.textContent = everyone
+      ? "✓ Following everyone — you'll see new games when you visit."
+      : (users.length ? "✓ Following " + users.length + " creator" + (users.length === 1 ? "" : "s") + "." : "✓ Saved. You're not following anyone yet.");
+    const close = document.createElement("button");
+    close.className = "nb-close";
+    close.type = "button";
+    close.textContent = "OK";
+    close.addEventListener("click", function () { banner.style.display = "none"; });
+    banner.appendChild(span);
+    banner.appendChild(close);
+    banner.style.display = "flex";
   });
 
   // Admin mode: password unlocks votes worth 5
