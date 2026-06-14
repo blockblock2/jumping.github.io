@@ -633,28 +633,39 @@
       // threshold and changed category (so we don't interrupt anyone
       // mid-game every time someone votes).
       db.ref("votes").on("value", function (snap) {
-        const before = allGames.map(classifyGame).join("|");
+        const beforeMap = {};
+        allGames.forEach(function (g) { beforeMap[g.id] = classifyGame(g); });
         voteData = snap.val() || {};
-        const after = allGames.map(classifyGame).join("|");
-        if (allGames.length && before !== after) {
-          render();
-          buildChips();
-        } else {
-          updateVoteCounts();
-        }
+        // Apply category changes one card at a time (smooth, no flash).
+        let movedAny = false;
+        allGames.forEach(function (g) {
+          if (classifyGame(g) !== beforeMap[g.id]) {
+            const cardEl = document.querySelector('.game [data-game="' + g.id + '"]');
+            const card = cardEl ? cardEl.closest(".game") : null;
+            if (card) { moveCardSmoothly(card, g); movedAny = true; }
+          }
+        });
+        updateVoteCounts();
+        if (movedAny) buildChips();
       });
     } catch (e) {
       console.error("Voting setup failed:", e);
     }
   }
 
-  // Cast a vote (atomic, reliable). Admins add 5, everyone else adds 1.
+  // Cast a vote (atomic). Admins add 5, everyone else adds 1.
+  // Returns the amount and the save promise so we can detect failures.
   function castVote(gameId, slug) {
-    if (!db) return 0;
+    if (!db) return null;
     const amount = isAdmin ? ADMIN_VOTE_WEIGHT : 1;
-    db.ref("votes/" + gameId + "/" + slug)
+    const promise = db.ref("votes/" + gameId + "/" + slug)
       .set(firebase.database.ServerValue.increment(amount));
-    return amount;
+    return { amount: amount, promise: promise };
+  }
+
+  // How a count looks on a button: "3/5" normally, "✓ 65" once it's in.
+  function displayCount(n) {
+    return n >= VOTE_THRESHOLD ? ("✓ " + n) : (n + "/" + VOTE_THRESHOLD);
   }
 
   // Refresh the vote numbers shown on cards without rebuilding them
@@ -665,7 +676,7 @@
       const slug = opt.getAttribute("data-slug");
       const n = (voteData[id] && voteData[id][slug]) || 0;
       const vc = opt.querySelector(".vc");
-      if (vc) vc.textContent = n + "/" + VOTE_THRESHOLD;
+      if (vc) vc.textContent = displayCount(n);
     });
   }
 
@@ -698,6 +709,8 @@
     // sports
     "basketball", "b-ball", "bball", "hoops", "dunk", "slam dunk",
     "buzzer beater", "three point", "3 point", "free throw", "nba",
+    "kobe", "lebron", "michael jordan", "jordan", "curry", "shaq",
+    "lakers", "bulls", "celtics", "warriors",
     "baseball", "football", "soccer", "hockey", "tennis",
     "golf", "volleyball", "dodgeball", "skateboard", "skating", "bowling",
     "boxing", "wrestling", "racing", "race car", "f1", "nascar", "olympics",
@@ -764,6 +777,30 @@
   let allGames = [];
   let activeCategory = "All";
   let players = []; // one stop-controller per visible game card
+
+  /* ---------- Move one card to its new category without a flash ---------- */
+  function moveCardSmoothly(card, g) {
+    const cat = classifyGame(g);
+    // Update the badge on the card.
+    const badge = card.querySelector(".game-cat");
+    if (badge) {
+      const byVote = votedCategory(g);
+      badge.textContent = (byVote ? "🗳️ " : "🤖 ") + cat;
+      badge.title = byVote ? "Moved here by votes" : "Sorted automatically from the title";
+    }
+    // If a category filter is active and this card no longer belongs,
+    // fade it out and remove it. Otherwise just give it a little flash.
+    if (activeCategory !== "All" && cat !== activeCategory) {
+      card.style.transition = "opacity 0.4s ease";
+      card.style.opacity = "0";
+      setTimeout(function () { card.remove(); }, 400);
+    } else {
+      card.animate(
+        [{ outline: "5px solid var(--orange)" }, { outline: "5px solid transparent" }],
+        { duration: 1200 }
+      );
+    }
+  }
 
   /* ---------- Build a game card ---------- */
   function makeCard(g) {
@@ -905,22 +942,38 @@
         opt.setAttribute("data-game", g.id);
         opt.setAttribute("data-slug", c.slug);
         const n = counts[c.slug] || 0;
-        opt.innerHTML = c.name + ' <span class="vc">' + n + "/" + VOTE_THRESHOLD + "</span>";
+        opt.innerHTML = c.name + ' <span class="vc">' + displayCount(n) + "</span>";
         opt.addEventListener("click", function () {
-          const added = castVote(g.id, c.slug);
-          if (!added) return;
-          // Update the number right away so the vote is clearly seen.
+          const before = classifyGame(g);
+          const res = castVote(g.id, c.slug);
+          if (!res) return;
+          // Update the count locally right away.
           voteData[g.id] = voteData[g.id] || {};
-          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + added;
-          const vc = opt.querySelector(".vc");
-          if (vc) vc.textContent = voteData[g.id][c.slug] + "/" + VOTE_THRESHOLD;
-          opt.classList.add("just-voted");
-          voteToggle.textContent = added > 1 ? "✓ +" + added + " votes!" : "✓ Vote counted!";
-          setTimeout(function () {
-            voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
-          }, 1500);
-          // The live listener confirms from the database and moves the
-          // game if it just crossed the threshold.
+          voteData[g.id][c.slug] = (voteData[g.id][c.slug] || 0) + res.amount;
+          voteToggle.textContent = res.amount > 1 ? "✓ +" + res.amount + " votes!" : "✓ Vote counted!";
+
+          // If the save is rejected (usually database rules), say so.
+          if (res.promise && res.promise.catch) {
+            res.promise.catch(function (e) {
+              voteToggle.textContent = "⚠️ Couldn't save — check database rules";
+              console.error("Vote save failed:", e);
+            });
+          }
+
+          const after = classifyGame(g);
+          if (after !== before) {
+            // Crossed the threshold — move just this one card smoothly
+            // instead of rebuilding the whole grid (which flashes white).
+            moveCardSmoothly(card, g);
+            buildChips();
+          } else {
+            const vc = opt.querySelector(".vc");
+            if (vc) vc.textContent = displayCount(voteData[g.id][c.slug]);
+            opt.classList.add("just-voted");
+            setTimeout(function () {
+              voteToggle.textContent = isAdmin ? "🔑 Vote (counts as 5)" : "🗳️ Add a vote";
+            }, 1500);
+          }
         });
         voteMenu.appendChild(opt);
       });
